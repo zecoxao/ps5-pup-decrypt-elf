@@ -1,7 +1,7 @@
 #ifndef __DECRYPTIO_H__
 #define __DECRYPTIO_H__
 
-
+#include <stdio.h>
 
 typedef struct _decrypt_state
 {

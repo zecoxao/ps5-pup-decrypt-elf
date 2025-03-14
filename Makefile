@@ -13,7 +13,7 @@ CFLAGS := -std=c++11 -Wall -Werror -g -I./include
 
 all: $(ELF)
 
-$(ELF): source/checkheaders.c source/decrypt.c source/decryptio.c source/encryptsrv.c source/main.c
+$(ELF): source/checkheaders.cpp source/decrypt.cpp source/decryptio.cpp source/encryptsrv.cpp source/main.cpp
 	$(CXX) $(CFLAGS) -o $@ $^
 
 clean:

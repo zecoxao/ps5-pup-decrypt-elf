@@ -1,6 +1,8 @@
 #ifndef __PUP_H__
 #define __PUP_H__
 
+#include <stdio.h>
+
 typedef struct _pup_file_header
 {
   uint32_t magic;

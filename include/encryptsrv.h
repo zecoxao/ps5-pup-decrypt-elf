@@ -1,6 +1,8 @@
 #ifndef __ENCRYPTSERVICE_H__
 #define __ENCRYPTSERVICE_H__
 
+#include <stdio.h>
+
 int encsrv_verify_blsheader(int fd, void* buffer, size_t length, int type);
 
 int encsrv_decrypt_header(int fd, void* buffer, size_t length, int type);

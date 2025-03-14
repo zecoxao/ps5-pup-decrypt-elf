@@ -1,6 +1,8 @@
 #ifndef __ENCRYPTSERVICEARGS_H__
 #define __ENCRYPTSERVICEARGS_H__
 
+#include <stdio.h>
+
 typedef struct _verify_blsheader_args
 {
   void* buffer; //rbx (rsi)
