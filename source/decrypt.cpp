@@ -21,7 +21,7 @@ int verify_segment(const decrypt_state* state, int index, pup_segment* segment, 
   ssize_t bytesread = readbytes(state, segment->offset, segment->compressed_size, buffer, segment->compressed_size);
   if (bytesread != segment->compressed_size)
   {
-     SOCK_LOG("Failed to read segment #%d for verification!\n", index);
+     printf_notification("Failed to read segment #%d for verification!\n", index);
      result = -1;
      return result;
   }
@@ -29,7 +29,7 @@ int verify_segment(const decrypt_state* state, int index, pup_segment* segment, 
   result = encsrv_verify_segment(state->device_fd, index, buffer, segment->compressed_size, additional);
   if (result != 0)
   {
-    SOCK_LOG("Failed to verify segment #%d! %d\n", index, result);
+    printf_notification("Failed to verify segment #%d! %d\n", index, result);
     return result;
   }
   return 0;
@@ -44,7 +44,7 @@ int verify_segments(const decrypt_state* state, pup_segment* segments, int segme
     pup_segment* segment = &segments[i];
     if ((segment->flags & 0xF0000000) == 0xE0000000)
     {
-      SOCK_LOG("Verifying segment #%d (%d)... [1]\n", i, segment->flags >> 20);
+      printf_notification("Verifying segment #%d (%d)... [1]\n", i, segment->flags >> 20);
       result = verify_segment(state, i, segment, 1);
       if (result < 0)
       {
@@ -58,7 +58,7 @@ int verify_segments(const decrypt_state* state, pup_segment* segments, int segme
     pup_segment* segment = &segments[i];
     if ((segment->flags & 0xF0000000) == 0xF0000000)
     {
-      SOCK_LOG("Verifying segment #%d (%d)... [0]\n", i, segment->flags >> 20);
+      printf_notification("Verifying segment #%d (%d)... [0]\n", i, segment->flags >> 20);
       result = verify_segment(state, i, segment, 0);
       if (result < 0)
       {
@@ -98,7 +98,7 @@ int decrypt_segment(const decrypt_state* state, uint16_t index, pup_segment* seg
     ssize_t bytesread = readbytes(state, segment->offset, encrypted_size, buffer, segment->compressed_size);
     if (bytesread != encrypted_size)
     {
-      SOCK_LOG("Failed to read segment #%d!\n", index);
+      printf_notification("Failed to read segment #%d!\n", index);
       result = -1;
 	    if (buffer != NULL)
   {
@@ -111,7 +111,7 @@ int decrypt_segment(const decrypt_state* state, uint16_t index, pup_segment* seg
     if (result != 0)
     {
       
-      SOCK_LOG("Failed to decrypt segment #%d! - Error: %d\n", index, result);
+      printf_notification("Failed to decrypt segment #%d! - Error: %d\n", index, result);
 	    if (buffer != NULL)
   {
     free(buffer);
@@ -127,7 +127,7 @@ int decrypt_segment(const decrypt_state* state, uint16_t index, pup_segment* seg
 
     ssize_t byteswritten = writebytes(state, segment->offset, unencrypted_size, buffer, segment->compressed_size);
     if (byteswritten != unencrypted_size) {
-      SOCK_LOG("Failed to write segment #%d!\n", index);
+      printf_notification("Failed to write segment #%d!\n", index);
       result = -1;
 	    if (buffer != NULL)
   {
@@ -152,7 +152,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
   ssize_t bytesread = readbytes(state, table_segment->offset, table_length, table_buffer, table_length);
   if (bytesread != table_length)
   {
-    SOCK_LOG("  Failed to read table for segment #%d!\n", index);
+    printf_notification("  Failed to read table for segment #%d!\n", index);
     result = -1;
       if (block_buffer != NULL)
   {
@@ -167,13 +167,13 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
   return result;
   }
 
-  SOCK_LOG("  Decrypting table #%d for segment #%d\n", table_index, index);
+  printf_notification("  Decrypting table #%d for segment #%d\n", table_index, index);
   result = encsrv_decrypt_segment(state->device_fd,
                                  table_index, table_buffer, table_length);
   if (result != 0)
   {
     
-    SOCK_LOG("  Failed to decrypt table for segment #%d! Error: %d\n", index, result);
+    printf_notification("  Failed to decrypt table for segment #%d! Error: %d\n", index, result);
       if (block_buffer != NULL)
   {
     free(block_buffer);
@@ -204,7 +204,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
     size_t valid_table_length = block_count * (32 + sizeof(pup_block_info));
     if (valid_table_length != table_length)
     {
-      SOCK_LOG("  Strange segment #%d table: %lu vs %lu\n",
+      printf_notification("  Strange segment #%d table: %lu vs %lu\n",
                    index, valid_table_length, table_length);
     }
     block_info = (pup_block_info*)&table_buffer[32 * block_count];
@@ -212,7 +212,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
 
   posix_memalign((void**)&block_buffer, 0x4000, block_size);
 
-  SOCK_LOG("  Decrypting %d blocks...\n   ", block_count);
+  printf_notification("  Decrypting %d blocks...\n   ", block_count);
 
   int Seeked = 0;
   //GetElapsed(0);
@@ -222,7 +222,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
   const uint32_t mask = (segment->flags2 & 1) ? 0x1ff : 0xf;
   for (int i = 0; i < block_count; i++)
   {
-    SOCK_LOG("  Decrypting block %d/%d...\n", i, block_count);
+    printf_notification("  Decrypting block %d/%d...\n", i, block_count);
 
     if ((block_count > 50) && (i % 5 == 0) ) {
        uint32_t percentage = (uint32_t)(((float)i / (float)block_count) * 100.0f);
@@ -272,7 +272,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
     int bytesread = readbytes(state, SeekTo, read_size, block_buffer, block_size);
     if (bytesread != read_size)
     {
-      SOCK_LOG("  Failed to read block %d for segment #%d! %d\n", i, index, bytesread);
+      printf_notification("  Failed to read block %d for segment #%d! %d\n", i, index, bytesread);
         if (block_buffer != NULL)
   {
     free(block_buffer);
@@ -291,7 +291,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
     if (result < 0)
     {
       int errcode = errno;
-      SOCK_LOG("  Failed to decrypt block for segment #%d! Error: %d (%s)\n", index, errcode, strerror(errcode));
+      printf_notification("  Failed to decrypt block for segment #%d! Error: %d (%s)\n", index, errcode, strerror(errcode));
       result = 0;
       //return result;
     }
@@ -299,7 +299,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
     ssize_t byteswritten = writebytes(state, SeekTo, read_size, block_buffer, block_size);
     if (byteswritten != read_size)
     {
-      SOCK_LOG("  Failed to write block %d for segment #%d!\n", i, index);
+      printf_notification("  Failed to write block %d for segment #%d!\n", i, index);
         if (block_buffer != NULL)
   {
     free(block_buffer);
@@ -324,7 +324,7 @@ int find_table_segment(int index, pup_segment* segments, int segment_count,
 {
   if (((index | 0x100) & 0xF00) == 0xF00)
   {
-    SOCK_LOG("Can't do table for segment #%d\n", index);
+    printf_notification("Can't do table for segment #%d\n", index);
     *table_index = -1;
     return -1;
   }
@@ -355,7 +355,7 @@ int decrypt_pup_data(const decrypt_state * state)
   bytesread = readbytes(state, DIO_BASEOFFSET, sizeof(file_header), &file_header, sizeof(file_header));
   if (bytesread != sizeof(file_header))
   {
-    SOCK_LOG("Failed to read PUP entry header!\n");
+    printf_notification("Failed to read PUP entry header!\n");
     	if (header_data != NULL)
 	  {
 		free(header_data);
@@ -365,7 +365,7 @@ int decrypt_pup_data(const decrypt_state * state)
 
 
   if (file_header.magic != 0xEEF51454) {
-    SOCK_LOG("PUP header magic is invalid!\n");
+    printf_notification("PUP header magic is invalid!\n");
     	if (header_data != NULL)
 	  {
 		free(header_data);
@@ -382,7 +382,7 @@ int decrypt_pup_data(const decrypt_state * state)
   bytesread = readbytes(state, DIO_NOSEEK, tsize, &header_data[sizeof(file_header)], header_size);
   if (bytesread != tsize)
   {
-    SOCK_LOG("Failed to read PUP entry header!\n");
+    printf_notification("Failed to read PUP entry header!\n");
     	if (header_data != NULL)
 	  {
 		free(header_data);
@@ -392,13 +392,13 @@ int decrypt_pup_data(const decrypt_state * state)
 
   if ((file_header.flags & 1) == 0)
   {
-    SOCK_LOG("Decrypting header...\n");
+    printf_notification("Decrypting header...\n");
     result = encsrv_decrypt_header(state->device_fd, header_data,
 				   header_size, state->pup_type);
     if (result != 0)
     {
       
-      SOCK_LOG("Failed to decrypt header! Error: %d\n", result);
+      printf_notification("Failed to decrypt header! Error: %d\n", result);
       	if (header_data != NULL)
 	  {
 		free(header_data);
@@ -408,7 +408,7 @@ int decrypt_pup_data(const decrypt_state * state)
   }
   else
   {
-    SOCK_LOG("Can't decrypt network pup!\n");
+    printf_notification("Can't decrypt network pup!\n");
     	if (header_data != NULL)
 	  {
 		free(header_data);
@@ -421,7 +421,7 @@ int decrypt_pup_data(const decrypt_state * state)
 
   ssize_t byteswritten = writebytes(state, DIO_BASEOFFSET, header_size, header_data, header_size);
   if (byteswritten != header_size) {
-     SOCK_LOG("Failed to write PUP entry header!\n");
+     printf_notification("Failed to write PUP entry header!\n");
      if (header_data != NULL)
 	  {
 		free(header_data);
@@ -429,11 +429,11 @@ int decrypt_pup_data(const decrypt_state * state)
       return result;
   }
 
-  SOCK_LOG("Verifying segments...\n");
+  printf_notification("Verifying segments...\n");
   result = verify_segments(state, segments, header->segment_count);
   if (result < 0)
   {
-    SOCK_LOG("Failed to verify segments!\n");
+    printf_notification("Failed to verify segments!\n");
 	if (header_data != NULL)
 	  {
 		free(header_data);
@@ -445,7 +445,7 @@ int decrypt_pup_data(const decrypt_state * state)
   /*for (int i = 0; i < header->segment_count; i++)
   {
     pup_segment* segment = &segments[i];
-    SOCK_LOG("%4d i=%4u b=%u c=%u t=%u r=%05X\n",
+    printf_notification("%4d i=%4u b=%u c=%u t=%u r=%05X\n",
                   i, segment->flags >> 20,
                   (segment->flags & 0x800) != 0,
                   (segment->flags & 0x8) != 0,
@@ -454,7 +454,7 @@ int decrypt_pup_data(const decrypt_state * state)
   }*/
 
 
-  SOCK_LOG("Decrypting %d segments...\n", header->segment_count);
+  printf_notification("Decrypting %d segments...\n", header->segment_count);
   for (int i = 0; i < header->segment_count; i++)
   {
     pup_segment* segment = &segments[i];
@@ -462,16 +462,16 @@ int decrypt_pup_data(const decrypt_state * state)
     uint32_t special = segment->flags & 0xF0000000;
     if (special == 0xE0000000)
     {
-      SOCK_LOG("Skipping additional signature segment #%d!\n", i);
+      printf_notification("Skipping additional signature segment #%d!\n", i);
       continue;
     }
     else if (special == 0xF0000000)
     {
-      SOCK_LOG("Skipping watermark segment #%d!\n", i);
+      printf_notification("Skipping watermark segment #%d!\n", i);
       continue;
     }
 
-    SOCK_LOG("Decrypting segment %d/%d...\n",
+    printf_notification("Decrypting segment %d/%d...\n",
                  1 + i, header->segment_count);
 
     if ((segment->flags & 0x800) != 0)
@@ -480,7 +480,7 @@ int decrypt_pup_data(const decrypt_state * state)
       result = find_table_segment(i, segments, header->segment_count, &table_index);
       if (result < 0)
       {
-        SOCK_LOG("Failed to find table for segment #%d!\n", i);
+        printf_notification("Failed to find table for segment #%d!\n", i);
         continue;
       }
 
@@ -519,12 +519,12 @@ int decrypt_pup(decrypt_state * state, const char * OutputPath)
       sprintf(state->output_path, OUTPUTPATH, state->entryname);
   }
 
-  SOCK_LOG("Creating %s...\n", state->output_path);
+  printf_notification("Creating %s...\n", state->output_path);
 
   state->output_file = open(state->output_path, O_WRONLY | O_CREAT | O_TRUNC, 0777);
   if (state->output_file == -1)
   {
-    SOCK_LOG("Failed to open %s!\n", state->output_path);
+    printf_notification("Failed to open %s!\n", state->output_path);
     if (state->output_file != -1)
 	{
 		close(state->output_file);
@@ -543,7 +543,7 @@ int decrypt_pup(decrypt_state * state, const char * OutputPath)
 
   if (state->pup_type < 0)
   {
-    SOCK_LOG("Don't know the type for %s!\n", state->output_path);
+    printf_notification("Don't know the type for %s!\n", state->output_path);
     if (state->output_file != -1)
 	{
 		close(state->output_file);
@@ -574,11 +574,11 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
 
   sprintf(state.input_path, "%s", (InputPath != NULL) ? InputPath : INPUTPATH);
 
-  SOCK_LOG("Opening %s...\n", state.input_path);
+  printf_notification("Opening %s...\n", state.input_path);
   state.input_file = open(state.input_path, O_RDONLY, 0);
   if (state.input_file == -1)
   {
-    SOCK_LOG("Failed to open %s!\n", state.input_path);
+    printf_notification("Failed to open %s!\n", state.input_path);
 	  if (header_data != NULL)
 	  {
 		free(header_data);
@@ -603,13 +603,13 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
   posix_memalign((void**)&header_data, 0x4000, blsinitial);
 
   if (header_data == NULL) {
-    SOCK_LOG("Failed to allocate memory!\n");
+    printf_notification("Failed to allocate memory!\n");
   }
 
   ssize_t bytesread = readbytes(&state, DIO_RESET, blsinitial, header_data, blsinitial);
 
   if (bytesread < blsinitial) {
-    SOCK_LOG("Failed to read BLS header or BLS header too small!!\n");
+    printf_notification("Failed to read BLS header or BLS header too small!!\n");
 	  if (header_data != NULL)
 	  {
 		free(header_data);
@@ -634,7 +634,7 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
   bls_header * header = (bls_header*)header_data;
 
   if (header->magic != 0x32424C53) {
-    SOCK_LOG("Invalid BLS Header!\n");
+    printf_notification("Invalid BLS Header!\n");
 	  if (header_data != NULL)
 	  {
 		free(header_data);
@@ -657,7 +657,7 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
   }
 
   if ((header->file_count < 1) || (header->file_count > 10)) {
-     SOCK_LOG("Invalid PUP entry count!\n");
+     printf_notification("Invalid PUP entry count!\n");
 	  if (header_data != NULL)
 	  {
 		free(header_data);
@@ -686,7 +686,7 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
     state.device_fd = open("/dev/pup_update0", O_RDWR, 0);
     if (state.device_fd < 0)
     {
-      SOCK_LOG("Failed to open /dev/pup_update0!\n");
+      printf_notification("Failed to open /dev/pup_update0!\n");
 	  if (header_data != NULL)
 	  {
 		free(header_data);
@@ -708,12 +708,12 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
 	  return result;
     }
 
-    SOCK_LOG("Verifying Bls Header...\n");
+    printf_notification("Verifying Bls Header...\n");
     int result = encsrv_verify_blsheader(state.device_fd, header_data, blsinitial, 0);
 
     if (result != 0) {
         
-      SOCK_LOG("Failed while verifying Bls Header! Error: %d\n", result);
+      printf_notification("Failed while verifying Bls Header! Error: %d\n", result);
 	  if (header_data != NULL)
 	  {
 		free(header_data);

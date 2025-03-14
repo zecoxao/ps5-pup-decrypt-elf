@@ -18,20 +18,25 @@ extern "C" {
 
 #include "defines.h"
 #include "debug.h"
+#include "decrypt.h"
 
 #define IP(a, b, c, d) (((a) << 0) + ((b) << 8) + ((c) << 16) + ((d) << 24))
 
 
 int g_debug_sock;
 
-void decrypt_pups(const char*, const char *);
-
 int sock;
 
 int main(){
 	
-	// Set shellcore auth ID
-    kernel_set_ucred_authid(getpid(), 0x4800000000000007);
+	pid_t pid;
+	
+	pid = getpid();
+	kernel_set_ucred_authid(pid, 0x4801000000000013L);
+    
+	
+	// Jailbreak
+    kernel_set_proc_rootdir(getpid(), kernel_get_root_vnode());
 
 	printf_notification("PUP Decrypt started!");
   
