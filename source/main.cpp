@@ -22,7 +22,7 @@ extern "C" {
 #define IP(a, b, c, d) (((a) << 0) + ((b) << 8) + ((c) << 16) + ((d) << 24))
 
 
-
+int g_debug_sock;
 
 void decrypt_pups(const char*, const char *);
 
@@ -42,7 +42,7 @@ int main(){
 	server.sin_addr.s_addr = DEBUG_ADDR;                //in defines.h
 	server.sin_port = htons (DEBUG_PORT);          //in defines.h
 	memset(server.sin_zero, 0, sizeof(server.sin_zero));
-	sock = socket(AF_INET, SOCK_STREAM, 0);
+	g_debug_sock = socket(AF_INET, SOCK_STREAM, 0);
 	connect(sock, (struct sockaddr *)&server, sizeof(server));
 
 	int flag = 1;

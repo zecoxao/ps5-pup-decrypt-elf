@@ -18,8 +18,9 @@ typedef struct notify_request {
   char message[3075];
 } notify_request_t;
 
-int sceKernelSendNotificationRequest(int, notify_request_t*, size_t, int);
-
+extern "C" {
+	int sceKernelSendNotificationRequest(int, notify_request_t*, size_t, int);
+}
 
 
 #define printf_notification(fmt, ...) \

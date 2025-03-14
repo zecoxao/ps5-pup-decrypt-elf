@@ -17,7 +17,7 @@ int verify_segment(const decrypt_state* state, int index, pup_segment* segment, 
   int result;
   uint8_t* buffer = NULL;
 
-  buffer = memalign(0x4000, segment->compressed_size);
+  posix_memalign((void**)&buffer, 0x4000, segment->compressed_size);
   ssize_t bytesread = readbytes(state, segment->offset, segment->compressed_size, buffer, segment->compressed_size);
   if (bytesread != segment->compressed_size)
   {
@@ -32,6 +32,7 @@ int verify_segment(const decrypt_state* state, int index, pup_segment* segment, 
     SOCK_LOG("Failed to verify segment #%d! %d\n", index, result);
     return result;
   }
+  return 0;
 }
 
 int verify_segments(const decrypt_state* state, pup_segment* segments, int segment_count)
@@ -65,14 +66,16 @@ int verify_segments(const decrypt_state* state, pup_segment* segments, int segme
       }
     }
   }
-
+  return 0;
 }
 
 int decrypt_segment(const decrypt_state* state, uint16_t index, pup_segment* segment)
 {
   int result = -1;
-
-  uint8_t* buffer = memalign(0x4000, segment->compressed_size);
+  
+  uint8_t* buffer;
+  
+  posix_memalign((void**)&buffer, 0x4000, segment->compressed_size);
 
   int is_compressed = (segment->flags & 8) != 0 ? 1 : 0;
 
@@ -97,6 +100,10 @@ int decrypt_segment(const decrypt_state* state, uint16_t index, pup_segment* seg
     {
       SOCK_LOG("Failed to read segment #%d!\n", index);
       result = -1;
+	    if (buffer != NULL)
+  {
+    free(buffer);
+  }
       return result;
     }
 
@@ -105,6 +112,10 @@ int decrypt_segment(const decrypt_state* state, uint16_t index, pup_segment* seg
     {
       
       SOCK_LOG("Failed to decrypt segment #%d! - Error: %d\n", index, result);
+	    if (buffer != NULL)
+  {
+    free(buffer);
+  }
       return result;
     }
 
@@ -118,17 +129,14 @@ int decrypt_segment(const decrypt_state* state, uint16_t index, pup_segment* seg
     if (byteswritten != unencrypted_size) {
       SOCK_LOG("Failed to write segment #%d!\n", index);
       result = -1;
-      return result;
-    }
-  }
-
-end:
-  if (buffer != NULL)
+	    if (buffer != NULL)
   {
     free(buffer);
   }
-
-  return result;
+      return result;
+    }
+  }
+  return 0;
 }
 
 int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segment* segment,
@@ -139,14 +147,24 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
   uint8_t* block_buffer = NULL;
 
   size_t table_length = table_segment->compressed_size;
-  table_buffer = memalign(0x4000, table_length);
+  posix_memalign((void**)&table_buffer, 0x4000, table_length);
 
   ssize_t bytesread = readbytes(state, table_segment->offset, table_length, table_buffer, table_length);
   if (bytesread != table_length)
   {
     SOCK_LOG("  Failed to read table for segment #%d!\n", index);
     result = -1;
-    return result;
+      if (block_buffer != NULL)
+  {
+    free(block_buffer);
+  }
+
+  if (table_buffer != NULL)
+  {
+    free(table_buffer);
+  }
+
+  return result;
   }
 
   SOCK_LOG("  Decrypting table #%d for segment #%d\n", table_index, index);
@@ -156,7 +174,17 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
   {
     
     SOCK_LOG("  Failed to decrypt table for segment #%d! Error: %d\n", index, result);
-    return result;
+      if (block_buffer != NULL)
+  {
+    free(block_buffer);
+  }
+
+  if (table_buffer != NULL)
+  {
+    free(table_buffer);
+  }
+
+  return result;
   }
 
   int is_compressed = (segment->flags & 8) != 0 ? 1 : 0;
@@ -182,7 +210,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
     block_info = (pup_block_info*)&table_buffer[32 * block_count];
   }
 
-  block_buffer = memalign(0x4000, block_size);
+  posix_memalign((void**)&block_buffer, 0x4000, block_size);
 
   SOCK_LOG("  Decrypting %d blocks...\n   ", block_count);
 
@@ -245,7 +273,17 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
     if (bytesread != read_size)
     {
       SOCK_LOG("  Failed to read block %d for segment #%d! %d\n", i, index, bytesread);
-      return result;
+        if (block_buffer != NULL)
+  {
+    free(block_buffer);
+  }
+
+  if (table_buffer != NULL)
+  {
+    free(table_buffer);
+  }
+
+  return result;
     }
 
     result = encsrv_decrypt_segment_block(state->device_fd, index, i, block_buffer,
@@ -262,15 +300,7 @@ int decrypt_segment_blocks(const decrypt_state * state, uint16_t index, pup_segm
     if (byteswritten != read_size)
     {
       SOCK_LOG("  Failed to write block %d for segment #%d!\n", i, index);
-      return result;
-    }
-
-    Seeked = 1;
-    remaining_size -= read_size;
-  }
-
-end:
-  if (block_buffer != NULL)
+        if (block_buffer != NULL)
   {
     free(block_buffer);
   }
@@ -281,6 +311,12 @@ end:
   }
 
   return result;
+    }
+
+    Seeked = 1;
+    remaining_size -= read_size;
+  }
+  return 0;
 }
 
 int find_table_segment(int index, pup_segment* segments, int segment_count,
@@ -311,7 +347,7 @@ int find_table_segment(int index, pup_segment* segments, int segment_count,
 
 int decrypt_pup_data(const decrypt_state * state)
 {
-  int result;
+  int result = -1;
   ssize_t bytesread;
   uint8_t* header_data = NULL;
 
@@ -339,7 +375,7 @@ int decrypt_pup_data(const decrypt_state * state)
 
   int header_size = file_header.unknown_0C + file_header.unknown_0E;
 
-  header_data = memalign(0x4000, header_size);
+  posix_memalign((void**)&header_data, 0x4000, header_size);
   memcpy(header_data, &file_header, sizeof(file_header));
 
   size_t tsize = header_size - sizeof(file_header);
@@ -516,6 +552,7 @@ int decrypt_pup(decrypt_state * state, const char * OutputPath)
   }
 
   decrypt_pup_data(state);
+  return 0;
 }
 
 
@@ -563,7 +600,7 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
 	  return result;
   }
 
-  header_data = memalign(0x4000, blsinitial);
+  posix_memalign((void**)&header_data, 0x4000, blsinitial);
 
   if (header_data == NULL) {
     SOCK_LOG("Failed to allocate memory!\n");
@@ -717,7 +754,7 @@ int decrypt_pups(const char * InputPath, const char * OutputPath)
     state.device_fd = -1;
 
   }
-
+  return 0;
 }
 
 

@@ -9,7 +9,7 @@ endif
 
 ELF := ps5-pup-decrypt.elf
 
-CFLAGS := -std=c++11 -Wall -Werror -g -I./include
+CFLAGS := -std=c++11 -Wall -Werror -g -I./include 
 
 all: $(ELF)
 

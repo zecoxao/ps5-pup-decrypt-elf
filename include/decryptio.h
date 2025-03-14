@@ -28,7 +28,7 @@ decrypt_state;
 #define DIO_RESET -1
 #define DIO_BASEOFFSET -2
 
-ssize_t readbytes(const decrypt_state* state, size_t offset, size_t bytes, void* buffer, size_t buffersize);
-ssize_t writebytes(const decrypt_state* state, size_t offset, size_t bytes, void* buffer, size_t buffersize);
+ssize_t readbytes(const decrypt_state* state, int offset, size_t bytes, void* buffer, size_t buffersize);
+ssize_t writebytes(const decrypt_state* state, int offset, size_t bytes, void* buffer, size_t buffersize);
 
 #endif
