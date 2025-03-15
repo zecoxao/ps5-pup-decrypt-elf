@@ -33,7 +33,7 @@ jobs:
         sudo apt install clang-18 
         make DESTDIR=${{ runner.tool_cache }}/ps5-payload-sdk clean install
         echo PS5_PAYLOAD_SDK=${{ runner.tool_cache }}/ps5-payload-sdk >> $GITHUB_ENV
-        ./libcxx.sh
+        cd ${{ runner.tool_cache }}ps5-payload-sdk && ./libcxx.sh
 
     - name: Checkout Payload
       uses: actions/checkout@v3
