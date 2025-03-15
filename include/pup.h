@@ -1,7 +1,7 @@
 #ifndef __PUP_H__
 #define __PUP_H__
 
-#include <stdio.h>
+#include <stdint.h>
 
 typedef struct _pup_file_header
 {
