@@ -22,7 +22,7 @@ extern "C" {
 
 #define IP(a, b, c, d) (((a) << 0) + ((b) << 8) + ((c) << 16) + ((d) << 24))
 
-
+//edit this line when u want to compile latest from actions
 int g_debug_sock;
 
 int sock;
